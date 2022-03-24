@@ -3,15 +3,58 @@
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
+#include <pthread.h>
 #include "mmm.h"
 
 /**
  * Allocate and initialize the matrices on the heap. Populate
  * the input matrices with random integers from 0 to 99
  */
-void mmm_init()
+void mmm_init(int size)
 {
-	// TODO
+	A = (double**)malloc(sizeof(double*)*size);
+	for(int i=0; i<size; i++) {
+		A[i] = (double*)malloc(sizeof(double)*size);
+	}
+
+	B = (double**)malloc(sizeof(double*)*size);
+	for(int i=0; i<size; i++) {
+		B[i] = (double*)malloc(sizeof(double)*size);
+	}
+
+	C = (double**)malloc(sizeof(double*)*size);
+	for(int i=0; i<size; i++) {
+		C[i] = (double*)malloc(sizeof(double)*size);
+	}
+
+	D = (double**)malloc(sizeof(double*)*size);
+	for(int i=0; i<size; i++) {
+		D[i] = (double*)malloc(sizeof(double)*size);
+	}
+
+	for(int i=0; i<size; i++) {
+		for(int j=0; j<size; j++) {
+			A[i][j] = rand() % 100;
+		}
+	}
+	
+	for(int i=0; i<size; i++) {
+		for(int j=0; j<size; j++) {
+			B[i][j] = rand() % 100;
+		}
+	}
+
+	for(int i=0; i<size; i++) {
+		for(int j=0; j<size; j++) {
+			C[i][j] = 0;
+		}
+	}
+
+	for(int i=0; i<size; i++) {
+		for(int j=0; j<size; j++) {
+			D[i][j] = 0;
+		}
+	}
 }
 
 /**
@@ -19,7 +62,11 @@ void mmm_init()
  */
 void mmm_reset(double **matrix)
 {
-	// TODO
+	for(int i=0; i<currSize; i++) {
+		for(int j=0; j<currSize; j++) {
+			matrix[i][j] = 0;
+		}
+	}
 }
 
 /**
@@ -27,7 +74,10 @@ void mmm_reset(double **matrix)
  */
 void mmm_freeup()
 {
-	// TODO
+	free(A);
+	free(B);
+	free(C);
+	free(D);
 }
 
 /**
@@ -35,7 +85,13 @@ void mmm_freeup()
  */
 void mmm_seq()
 {
-	// TODO - code to perform sequential MMM
+	for(int i=0; i<currSize; i++) {
+		for(int j=0; j<currSize; j++) {
+			for(int k=0; k<currSize; k++) {
+				C[i][j] += A[i][k] * B[k][j];
+			}
+		}
+	}
 }
 
 /**
@@ -43,7 +99,15 @@ void mmm_seq()
  */
 void *mmm_par(void *args)
 {
-	// TODO - code to perform parallel MMM
+	thread_args *params = (thread_args *)args;
+	for(int i=params->start; i<params->end; i++){
+		for(int j=0; j<currSize; j++){
+			for(int k=0; k<currSize; k++){
+				D[i][j] += A[i][k] * B[k][j];
+			}
+		}
+	}
+	return NULL;
 }
 
 /**
@@ -54,6 +118,16 @@ void *mmm_par(void *args)
  */
 double mmm_verify()
 {
-	// TODO
-	return -1;
+	double biggestError = 0;
+	for(int i=0; i<currSize; i++) {
+		for(int j=0; j<currSize; j++) {
+			if(C[i][j] != D[i][j]) {
+				int temp = C[i][j] - D[i][j];
+				if(temp > biggestError){
+					biggestError = temp;
+				}
+			}
+		}
+	}
+	return biggestError;
 }
